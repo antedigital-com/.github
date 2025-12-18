@@ -1,17 +1,30 @@
 name: Auto-add Maintainers team to new repositories
+
 on:
-  repository:
-    types: [created]
+  schedule:
+    # Run every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
-  add-team:
+  add-team-to-repos:
     runs-on: ubuntu-latest
     steps:
-      - name: Add Maintainers team to new repository
+      - name: Add Maintainers team to all repos
         run: |
-          gh api -X PUT \
-            "/orgs/${{ github.repository_owner }}/teams/maintainers/repos/${{ github.repository }}" \
-            -f permission=maintain
-          echo "✓ Added Maintainers team to ${{ github.repository }}"
+          # Get all repos
+          repos=$(gh repo list antedigital-com --limit 1000 --json name -q '.[].name')
+
+          # Get repos that already have the team
+          team_repos=$(gh api /orgs/antedigital-com/teams/maintainers/repos --jq '.[].name')
+
+          # Add team to repos that don't have it
+          for repo in $repos; do
+            if ! echo "$team_repos" | grep -q "^$repo$"; then
+              gh api -X PUT "/orgs/antedigital-com/teams/maintainers/repos/antedigital-com/$repo" \
+                -f permission=maintain
+              echo "✓ Added Maintainers team to $repo"
+            fi
+          done
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
