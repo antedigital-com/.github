@@ -1,0 +1,17 @@
+name: Auto-add Maintainers team to new repositories
+on:
+  repository:
+    types: [created]
+
+jobs:
+  add-team:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add Maintainers team to new repository
+        run: |
+          gh api -X PUT \
+            "/orgs/${{ github.repository_owner }}/teams/maintainers/repos/${{ github.repository }}" \
+            -f permission=maintain
+          echo "✓ Added Maintainers team to ${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
